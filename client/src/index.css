@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+/* Твої додаткові стилі */
+body {
+  @apply bg-neutral-900 text-white;
+}
