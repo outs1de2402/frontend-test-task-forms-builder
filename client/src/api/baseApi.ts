@@ -5,20 +5,21 @@ import type {
   FetchBaseQueryError,
 } from "@reduxjs/toolkit/query/react";
 
-// Типізуємо структуру GraphQL запиту
 export interface GraphQLRequestArg {
   document: string;
   variables?: Record<string, unknown> | void;
 }
 
-// Типізуємо очікувану відповідь від сервера
 interface GraphQLResponse<T> {
-  data: T;
+  data?: T;
   errors?: Array<{ message: string }>;
 }
 
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: "http://localhost:4000/graphql",
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 const customBaseQuery: BaseQueryFn<
@@ -40,17 +41,24 @@ const customBaseQuery: BaseQueryFn<
       extraOptions,
     );
 
-    // Перевіряємо наявність даних та типізуємо їх через record
-    if (
-      result.data &&
-      typeof result.data === "object" &&
-      "data" in result.data
-    ) {
-      const graphqlResult = result.data as GraphQLResponse<unknown>;
-      return { data: graphqlResult.data };
+    if (result.error) {
+      return result;
     }
 
-    return result;
+    const graphqlResult = result.data as GraphQLResponse<unknown>;
+
+    if (graphqlResult.errors?.length) {
+      return {
+        error: {
+          status: 400,
+          data: graphqlResult.errors,
+        },
+      };
+    }
+
+    if (graphqlResult.data !== undefined) {
+      return { data: graphqlResult.data };
+    }
   }
 
   return rawBaseQuery(arg as FetchArgs | string, api, extraOptions);
@@ -59,7 +67,7 @@ const customBaseQuery: BaseQueryFn<
 export const baseApi = createApi({
   reducerPath: "api",
   baseQuery: customBaseQuery,
-  tagTypes: ["Form"],
+  tagTypes: ["Form", "Response"],
   endpoints: () => ({}),
 });
 

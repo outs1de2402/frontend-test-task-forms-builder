@@ -1,6 +1,8 @@
+export type QuestionType = "TEXT" | "MULTIPLE_CHOICE" | "CHECKBOX" | "DATE";
+
 export interface Question {
   id: string;
-  type: "TEXT" | "MULTIPLE_CHOICE" | "CHECKBOX" | "DATE";
+  type: QuestionType;
   label: string;
   options?: string[];
 }
@@ -12,10 +14,26 @@ export interface Form {
   questions: Question[];
 }
 
+export interface Answer {
+  questionId: string;
+  value: string[];
+}
+
 export interface Response {
   id: string;
   formId: string;
-  answers: { questionId: string; value: string[] }[];
+  answers: Answer[];
+}
+
+export interface CreateFormInput {
+  title: string;
+  description?: string | null;
+  questions?: Array<Omit<Question, "id">> | null;
+}
+
+export interface SubmitResponseInput {
+  formId: string;
+  answers?: Answer[] | null;
 }
 
 export const db = {
