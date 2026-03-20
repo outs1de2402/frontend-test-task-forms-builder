@@ -1,47 +1,77 @@
 import { useState } from "react";
-// Імпортуємо типи прямо з генерації
-import type { QuestionType, QuestionInput } from "../../../generated";
+import type { QuestionInput, QuestionType } from "../../../generated";
+import {
+  createQuestionDraft,
+  getDefaultOptionLabel,
+  getQuestionOptions,
+} from "../../../../features/form-builder/questionTypes";
 
 export const useFormBuilder = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  // Явно вказуємо масив QuestionInput
   const [questions, setQuestions] = useState<QuestionInput[]>([]);
 
   const addQuestion = () => {
-    const newQuestion: QuestionInput = {
-      label: "",
-      type: "TEXT" as QuestionType,
-      options: null,
-    };
-    setQuestions([...questions, newQuestion]);
+    setQuestions((currentQuestions) => [...currentQuestions, createQuestionDraft()]);
   };
 
   const updateQuestion = (index: number, data: Partial<QuestionInput>) => {
-    const newQs = [...questions];
-    newQs[index] = { ...newQs[index], ...data } as QuestionInput;
-    setQuestions(newQs);
+    setQuestions((currentQuestions) =>
+      currentQuestions.map((question, questionIndex) =>
+        questionIndex === index ? { ...question, ...data } : question,
+      ),
+    );
+  };
+
+  const updateQuestionType = (index: number, type: QuestionType) => {
+    setQuestions((currentQuestions) =>
+      currentQuestions.map((question, questionIndex) =>
+        questionIndex === index
+          ? {
+              ...question,
+              type,
+              options: getQuestionOptions(type, question.options),
+            }
+          : question,
+      ),
+    );
   };
 
   const removeQuestion = (index: number) => {
-    setQuestions(questions.filter((_, i) => i !== index));
+    setQuestions((currentQuestions) =>
+      currentQuestions.filter((_question, questionIndex) => questionIndex !== index),
+    );
   };
 
-  const addOption = (qIndex: number) => {
-    const q = questions[qIndex];
-    const currentOptions = q.options ? [...q.options] : [];
-    updateQuestion(qIndex, {
-      options: [...currentOptions, `Варіант ${currentOptions.length + 1}`],
-    });
+  const addOption = (questionIndex: number) => {
+    setQuestions((currentQuestions) =>
+      currentQuestions.map((question, index) => {
+        if (index !== questionIndex) {
+          return question;
+        }
+
+        const currentOptions = question.options ? [...question.options] : [];
+        return {
+          ...question,
+          options: [...currentOptions, getDefaultOptionLabel(currentOptions)],
+        };
+      }),
+    );
   };
 
-  const removeOption = (qIndex: number, optIndex: number) => {
-    const q = questions[qIndex];
-    if (q.options) {
-      updateQuestion(qIndex, {
-        options: q.options.filter((_, i) => i !== optIndex),
-      });
-    }
+  const removeOption = (questionIndex: number, optionIndex: number) => {
+    setQuestions((currentQuestions) =>
+      currentQuestions.map((question, index) => {
+        if (index !== questionIndex || !question.options) {
+          return question;
+        }
+
+        return {
+          ...question,
+          options: question.options.filter((_option, index) => index !== optionIndex),
+        };
+      }),
+    );
   };
 
   return {
@@ -52,6 +82,7 @@ export const useFormBuilder = () => {
     questions,
     addQuestion,
     updateQuestion,
+    updateQuestionType,
     removeQuestion,
     addOption,
     removeOption,
